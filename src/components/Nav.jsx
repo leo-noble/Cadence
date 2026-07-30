@@ -81,41 +81,26 @@ export default function Nav({ active, onChange, profile, onSignOut, collapsed, o
         )}
       </motion.aside>
 
-      {/* Mobile bottom nav — a floating glass pill, not a full-width bar,
-          so it reads like it's hovering above the content (Apple's tab-bar
-          / Dynamic Island language) rather than docked to the screen edge. */}
-      <nav className="md:hidden fixed inset-x-0 z-30 flex justify-center px-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        <div
-          className="glass-bar flex items-stretch gap-0.5 rounded-capsule px-1.5 py-1.5 shadow-fab"
-          style={{
-            background: 'var(--color-glass)',
-            backdropFilter: 'blur(24px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-            border: '1px solid var(--color-glass-border)',
-          }}
-        >
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/90 backdrop-blur-lg border-t border-divider pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-stretch justify-around">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => onChange(id)}
-              aria-label={label}
-              className="relative flex flex-col items-center justify-center gap-0.5 px-3.5 py-2 text-[10px] font-medium rounded-capsule"
+              className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors duration-180 ${
+                active === id ? 'text-brand' : 'text-ink-soft'
+              }`}
             >
               {active === id && (
                 <motion.span
-                  layoutId="nav-active-pill-mobile"
-                  className="absolute inset-0 rounded-capsule bg-brand shadow-[0_2px_10px_rgba(0,0,0,0.18)]"
-                  transition={{ type: 'spring', stiffness: 480, damping: 32 }}
+                  layoutId="nav-active-dot"
+                  className="absolute top-1 h-1 w-1 rounded-full bg-brand"
+                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
               )}
-              <motion.span
-                animate={active === id ? { y: -1, scale: 1.06 } : { y: 0, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 480, damping: 24 }}
-                className={`relative flex flex-col items-center gap-0.5 ${active === id ? 'text-white' : 'text-ink-soft'}`}
-              >
-                <Icon size={19} />
-                <span className={active === id ? 'opacity-100' : 'opacity-80'}>{label}</span>
-              </motion.span>
+              <Icon size={20} />
+              {label}
             </button>
           ))}
         </div>
