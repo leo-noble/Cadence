@@ -61,8 +61,9 @@ export default function ChapterDetailSheet({
 
         <div className="relative px-6 pt-2 pb-6">
           <button
-            onClick={onClose}
-            className="absolute right-4 top-0 h-7 w-7 rounded-full bg-divider flex items-center justify-center text-ink-soft active:opacity-60"
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClose() }}
+            className="absolute right-4 top-2 z-10 h-9 w-9 -m-1 rounded-full bg-divider flex items-center justify-center text-ink-soft active:opacity-60"
           >
             <X size={15} strokeWidth={2.5} />
           </button>

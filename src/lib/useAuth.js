@@ -44,6 +44,34 @@ export function useAuth() {
     })
   }, [])
 
+  // Redirects to Google, then back to /login?redirect=<path> — LoginPage
+  // reads that param and forwards the user on to their original destination
+  // once Supabase has finished restoring the session client-side.
+  const signInWithGoogle = useCallback(async (redirectPath = '/app') => {
+    if (!isSupabaseConfigured) return { error: { message: 'Supabase is not configured yet.' } }
+    return supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/login?redirect=${encodeURIComponent(redirectPath)}`,
+      },
+    })
+  }, [])
+
+  // Emails a reset link. Supabase's link lands back on /reset-password with
+  // a recovery token in the URL hash, which detectSessionInUrl turns into a
+  // temporary session — updatePassword below then sets the new password.
+  const resetPasswordForEmail = useCallback(async (email) => {
+    if (!isSupabaseConfigured) return { error: { message: 'Supabase is not configured yet.' } }
+    return supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+  }, [])
+
+  const updatePassword = useCallback(async (password) => {
+    if (!isSupabaseConfigured) return { error: { message: 'Supabase is not configured yet.' } }
+    return supabase.auth.updateUser({ password })
+  }, [])
+
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured) return
     await supabase.auth.signOut()
@@ -54,5 +82,5 @@ export function useAuth() {
   // of the email so there's always something reasonable to greet with.
   const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || ''
 
-  return { session, user, displayName, loading, signInWithPassword, signUp, signOut }
+  return { session, user, displayName, loading, signInWithPassword, signUp, signInWithGoogle, resetPasswordForEmail, updatePassword, signOut }
 }

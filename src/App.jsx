@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-route
 import { AnimatePresence, motion } from 'framer-motion'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import AppShell from './AppShell'
 import { getPrefs } from './lib/storage'
 import { useAuth } from './lib/useAuth'
@@ -40,6 +41,7 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<FadeIn><LandingPage /></FadeIn>} />
         <Route path="/login" element={<FadeIn><LoginPage /></FadeIn>} />
+        <Route path="/reset-password" element={<FadeIn><ResetPasswordPage /></FadeIn>} />
         <Route
           path="/app"
           element={

@@ -1,7 +1,6 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, LogOut, Download, Upload, Trash2, AlertTriangle, BarChart3, Check, BellRing, Sun, Moon, Monitor, CalendarDays } from 'lucide-react'
-import { exportAllData, importAllData, deleteAllData, exportChaptersToICS } from '../lib/storage'
+import { Bell, LogOut, BarChart3, Check, BellRing, Sun, Moon, Monitor } from 'lucide-react'
 import { useAuth } from '../lib/useAuth'
 import { enablePushNotifications, disablePushNotifications } from '../lib/push'
 import PageHeader from '../components/PageHeader'
@@ -111,9 +110,6 @@ export default function SettingsPage({ cadence }) {
   const navigate = useNavigate()
   const { user, displayName, signOut } = useAuth()
   const [message, setMessage] = useState('')
-  const [dataMessage, setDataMessage] = useState('')
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const fileInputRef = useRef(null)
   const isIOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent)
   const isStandalone = typeof window !== 'undefined' && window.matchMedia?.('(display-mode: standalone)').matches
   const profile = user ? { name: displayName, email: user.email } : null
@@ -162,63 +158,6 @@ export default function SettingsPage({ cadence }) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return
     new Notification('Cadence', { body: 'This is a test \u2014 if you can see it, reminders are working.' })
     flash(setMessage, 'Test notification sent.')
-  }
-
-  function handleExport() {
-    const json = exportAllData()
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `cadence-backup-${new Date().toISOString().slice(0, 10)}.json`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
-    flash(setDataMessage, 'Backup downloaded.')
-  }
-
-  function handleExportICS() {
-    const ics = exportChaptersToICS()
-    const blob = new Blob([ics], { type: 'text/calendar' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'cadence-reviews.ics'
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
-    flash(setDataMessage, 'Calendar file downloaded — import it into Google/Apple/Outlook Calendar.')
-  }
-
-  function handleImportClick() {
-    fileInputRef.current?.click()
-  }
-
-  function handleImportFile(e) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = importAllData(String(reader.result))
-      if (result.ok) {
-        refreshAll()
-        flash(setDataMessage, 'Backup restored.')
-      } else {
-        flash(setDataMessage, result.error || 'Couldn\u2019t read that backup file.', 4000)
-      }
-    }
-    reader.onerror = () => flash(setDataMessage, 'Couldn\u2019t read that file.')
-    reader.readAsText(file)
-  }
-
-  function handleDeleteAll() {
-    deleteAllData()
-    refreshAll()
-    setConfirmingDelete(false)
-    navigate('/app', { replace: true })
   }
 
   return (
@@ -350,65 +289,6 @@ export default function SettingsPage({ cadence }) {
               </div>
             </div>
           </Row>
-        </Group>
-      </div>
-
-      <div className="mb-6">
-        <GroupHeader>Your data</GroupHeader>
-        <Group>
-          <Row onClick={handleExportICS}>
-            <RowIcon icon={CalendarDays} />
-            <span className="text-[15px] text-ink">Export calendar (.ics)</span>
-          </Row>
-          <Row onClick={handleExport}>
-            <RowIcon icon={Download} />
-            <span className="text-[15px] text-ink">Export backup</span>
-          </Row>
-          <Row onClick={handleImportClick}>
-            <RowIcon icon={Upload} />
-            <span className="text-[15px] text-ink">Import backup</span>
-          </Row>
-        </Group>
-        <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={handleImportFile} />
-        <GroupFooter>
-          {dataMessage || 'Your data syncs to your account automatically, so signing in on another device picks up right where you left off. Export a backup anytime as extra insurance.'}
-        </GroupFooter>
-      </div>
-
-      <div className="mb-6">
-        <GroupHeader>Danger zone</GroupHeader>
-        <Group>
-          {!confirmingDelete ? (
-            <Row onClick={() => setConfirmingDelete(true)} className="justify-center">
-              <RowIcon icon={Trash2} tone="danger" />
-              <span className="text-[15px] font-medium text-status-overdue">Delete all data</span>
-            </Row>
-          ) : (
-            <div className="px-4 py-4">
-              <div className="flex items-start gap-2.5 mb-3.5">
-                <AlertTriangle size={16} className="text-status-overdue shrink-0 mt-0.5" />
-                <p className="text-[13.5px] text-ink leading-relaxed">
-                  This permanently deletes every subject, chapter, and review on this device. Export a backup first if you want to keep it.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(false)}
-                  className="flex-1 rounded-capsule border border-divider text-[14px] font-medium py-2 hover:bg-paper transition-colors duration-150"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeleteAll}
-                  className="flex-1 rounded-capsule bg-status-overdue text-white text-[14px] font-medium py-2 hover:brightness-110 transition-[filter] duration-150"
-                >
-                  Yes, delete everything
-                </button>
-              </div>
-            </div>
-          )}
         </Group>
       </div>
 
