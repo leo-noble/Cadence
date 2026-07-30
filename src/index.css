@@ -32,7 +32,8 @@
   --gradient-panel: linear-gradient(135deg, #eceef1 0%, #f3f4f6 55%, #e6e8ec 100%);
   --shadow-elevated: 0 1px 2px rgba(28, 32, 39, 0.05), 0 10px 22px -10px rgba(28, 32, 39, 0.12);
   --shadow-sheet: 0 -2px 26px rgba(28, 32, 39, 0.12), 0 -1px 2px rgba(28, 32, 39, 0.05);
-  --shadow-fab: 0 8px 20px -4px rgba(63, 88, 114, 0.32);
+  --color-glass: rgba(255, 255, 255, 0.62);
+  --color-glass-border: rgba(255, 255, 255, 0.55);
 }
 
 [data-theme='slate'][data-mode='dark'] {
@@ -52,7 +53,8 @@
   --gradient-panel: linear-gradient(135deg, #1b1e24 0%, #14161a 100%);
   --shadow-elevated: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
   --shadow-sheet: 0 -2px 32px rgba(0, 0, 0, 0.5), 0 -1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-fab: 0 8px 20px -4px rgba(127, 161, 196, 0.35);
+  --color-glass: rgba(36, 40, 48, 0.55);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
 }
 
 /* ---------- Aurora — elegant, with tasteful multi-color accents (violet,
@@ -78,7 +80,8 @@
   --gradient-panel: linear-gradient(135deg, rgba(47, 168, 147, 0.14) 0%, rgba(108, 92, 194, 0.16) 50%, rgba(217, 164, 65, 0.13) 100%), #f7f5fa;
   --shadow-elevated: 0 1px 2px rgba(32, 29, 41, 0.05), 0 10px 24px -10px rgba(70, 55, 120, 0.16);
   --shadow-sheet: 0 -2px 28px rgba(70, 55, 120, 0.14), 0 -1px 2px rgba(32, 29, 41, 0.05);
-  --shadow-fab: 0 8px 22px -4px rgba(108, 92, 194, 0.38);
+  --color-glass: rgba(255, 255, 255, 0.6);
+  --color-glass-border: rgba(255, 255, 255, 0.55);
 }
 
 [data-theme='aurora'][data-mode='dark'] {
@@ -98,7 +101,8 @@
   --gradient-panel: linear-gradient(135deg, rgba(63, 200, 175, 0.22) 0%, rgba(148, 132, 232, 0.26) 50%, rgba(224, 176, 90, 0.18) 100%), #16141d;
   --shadow-elevated: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -8px rgba(10, 6, 22, 0.65);
   --shadow-sheet: 0 -2px 32px rgba(8, 5, 18, 0.55), 0 -1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-fab: 0 8px 22px -4px rgba(148, 132, 232, 0.45);
+  --color-glass: rgba(40, 34, 56, 0.55);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
 }
 
 /* ---------- Forest — nature-inspired emerald, olive, and sandstone.
@@ -120,7 +124,8 @@
   --gradient-panel: linear-gradient(135deg, #ece6d3 0%, #f3f1e6 55%, #e6dfc8 100%);
   --shadow-elevated: 0 1px 2px rgba(35, 39, 30, 0.05), 0 10px 22px -10px rgba(35, 39, 30, 0.13);
   --shadow-sheet: 0 -2px 26px rgba(35, 39, 30, 0.13), 0 -1px 2px rgba(35, 39, 30, 0.05);
-  --shadow-fab: 0 8px 20px -4px rgba(63, 107, 74, 0.32);
+  --color-glass: rgba(253, 252, 246, 0.62);
+  --color-glass-border: rgba(255, 255, 255, 0.55);
 }
 
 [data-theme='forest'][data-mode='dark'] {
@@ -140,7 +145,8 @@
   --gradient-panel: linear-gradient(135deg, rgba(116, 179, 130, 0.24) 0%, rgba(150, 138, 92, 0.18) 55%, #171b11 100%);
   --shadow-elevated: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -8px rgba(4, 10, 4, 0.65);
   --shadow-sheet: 0 -2px 32px rgba(3, 8, 3, 0.55), 0 -1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-fab: 0 8px 22px -4px rgba(116, 179, 130, 0.4);
+  --color-glass: rgba(30, 35, 24, 0.55);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
 }
 
 html, body, #root {
