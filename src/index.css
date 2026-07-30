@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Theme system — three theme families (Slate, Aurora, Forest), each with a
+   handcrafted light AND dark variant — six palettes total, not three plus
+   inversions. Selected via two independent attributes on <html>:
+   data-theme (slate | aurora | forest) and data-mode (light | dark). Every
+   surface, border, shadow, accent, hover, and selection tint is a CSS
+   variable so swapping either attribute changes the whole feel, not just
+   the background.
+   ========================================================================== */
+
+/* ---------- Slate — clean, modern, professional; neutral grays with a
+   quiet steel-blue accent. Calm and productivity-focused. ---------- */
+:root,
+[data-theme='slate'][data-mode='light'] {
+  color-scheme: light;
+  --color-paper: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #e8eaed;
+  --color-ink: #1c2027;
+  --color-ink-soft: #6b7280;
+  --color-brand: #3f5872;
+  --color-brand-soft: #33475d;
+  --color-accent: #3f5872;
+  --color-divider: #e1e4e9;
+  --color-hover: rgba(63, 88, 114, 0.06);
+  --color-selected: rgba(63, 88, 114, 0.12);
+  --color-ring: rgba(63, 88, 114, 0.35);
+  --gradient-panel: linear-gradient(135deg, #eceef1 0%, #f3f4f6 55%, #e6e8ec 100%);
+  --shadow-elevated: 0 1px 2px rgba(28, 32, 39, 0.05), 0 10px 22px -10px rgba(28, 32, 39, 0.12);
+  --shadow-sheet: 0 -2px 26px rgba(28, 32, 39, 0.12), 0 -1px 2px rgba(28, 32, 39, 0.05);
+  --shadow-fab: 0 8px 20px -4px rgba(63, 88, 114, 0.32);
+}
+
+[data-theme='slate'][data-mode='dark'] {
+  color-scheme: dark;
+  --color-paper: #101216;
+  --color-surface: #191c21;
+  --color-surface-2: #21252c;
+  --color-ink: #e7e9ec;
+  --color-ink-soft: #8b93a0;
+  --color-brand: #7fa1c4;
+  --color-brand-soft: #6c8db0;
+  --color-accent: #7fa1c4;
+  --color-divider: #2b2f38;
+  --color-hover: rgba(127, 161, 196, 0.08);
+  --color-selected: rgba(127, 161, 196, 0.16);
+  --color-ring: rgba(127, 161, 196, 0.4);
+  --gradient-panel: linear-gradient(135deg, #1b1e24 0%, #14161a 100%);
+  --shadow-elevated: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
+  --shadow-sheet: 0 -2px 32px rgba(0, 0, 0, 0.5), 0 -1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-fab: 0 8px 20px -4px rgba(127, 161, 196, 0.35);
+}
+
+/* ---------- Aurora — elegant, with tasteful multi-color accents (violet,
+   teal, warm gold) used sparingly for depth rather than decoration.
+   Sophisticated, not flashy. ---------- */
+[data-theme='aurora'][data-mode='light'] {
+  color-scheme: light;
+  --color-paper: #f7f5fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #ece7f2;
+  --color-ink: #201d29;
+  --color-ink-soft: #77728a;
+  --color-brand: #6c5cc2;
+  --color-brand-soft: #5b4dab;
+  --color-accent: #6c5cc2;
+  --color-divider: #e5e0ec;
+  --color-hover: rgba(108, 92, 194, 0.06);
+  --color-selected: rgba(108, 92, 194, 0.12);
+  --color-ring: rgba(108, 92, 194, 0.35);
+  /* Aurora is the one theme where the panel gradient genuinely sweeps
+     through more than one hue — teal, violet, and warm gold — kept low-
+     opacity so it reads as ambient light rather than a rainbow. */
+  --gradient-panel: linear-gradient(135deg, rgba(47, 168, 147, 0.14) 0%, rgba(108, 92, 194, 0.16) 50%, rgba(217, 164, 65, 0.13) 100%), #f7f5fa;
+  --shadow-elevated: 0 1px 2px rgba(32, 29, 41, 0.05), 0 10px 24px -10px rgba(70, 55, 120, 0.16);
+  --shadow-sheet: 0 -2px 28px rgba(70, 55, 120, 0.14), 0 -1px 2px rgba(32, 29, 41, 0.05);
+  --shadow-fab: 0 8px 22px -4px rgba(108, 92, 194, 0.38);
+}
+
+[data-theme='aurora'][data-mode='dark'] {
+  color-scheme: dark;
+  --color-paper: #0e0d14;
+  --color-surface: #17151f;
+  --color-surface-2: #201d2c;
+  --color-ink: #f0eef5;
+  --color-ink-soft: #9c96ac;
+  --color-brand: #9484e8;
+  --color-brand-soft: #8272d6;
+  --color-accent: #9484e8;
+  --color-divider: #322e3f;
+  --color-hover: rgba(148, 132, 232, 0.1);
+  --color-selected: rgba(148, 132, 232, 0.18);
+  --color-ring: rgba(148, 132, 232, 0.45);
+  --gradient-panel: linear-gradient(135deg, rgba(63, 200, 175, 0.22) 0%, rgba(148, 132, 232, 0.26) 50%, rgba(224, 176, 90, 0.18) 100%), #16141d;
+  --shadow-elevated: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -8px rgba(10, 6, 22, 0.65);
+  --shadow-sheet: 0 -2px 32px rgba(8, 5, 18, 0.55), 0 -1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-fab: 0 8px 22px -4px rgba(148, 132, 232, 0.45);
+}
+
+/* ---------- Forest — nature-inspired emerald, olive, and sandstone.
+   Relaxing, mature, minimal. ---------- */
+[data-theme='forest'][data-mode='light'] {
+  color-scheme: light;
+  --color-paper: #f3f1e6;
+  --color-surface: #fdfcf6;
+  --color-surface-2: #e7e2cf;
+  --color-ink: #23271e;
+  --color-ink-soft: #726c56;
+  --color-brand: #3f6b4a;
+  --color-brand-soft: #345a3e;
+  --color-accent: #3f6b4a;
+  --color-divider: #ddd6c0;
+  --color-hover: rgba(63, 107, 74, 0.07);
+  --color-selected: rgba(63, 107, 74, 0.13);
+  --color-ring: rgba(63, 107, 74, 0.35);
+  --gradient-panel: linear-gradient(135deg, #ece6d3 0%, #f3f1e6 55%, #e6dfc8 100%);
+  --shadow-elevated: 0 1px 2px rgba(35, 39, 30, 0.05), 0 10px 22px -10px rgba(35, 39, 30, 0.13);
+  --shadow-sheet: 0 -2px 26px rgba(35, 39, 30, 0.13), 0 -1px 2px rgba(35, 39, 30, 0.05);
+  --shadow-fab: 0 8px 20px -4px rgba(63, 107, 74, 0.32);
+}
+
+[data-theme='forest'][data-mode='dark'] {
+  color-scheme: dark;
+  --color-paper: #11140e;
+  --color-surface: #191c13;
+  --color-surface-2: #22271a;
+  --color-ink: #eae7d9;
+  --color-ink-soft: #9b9682;
+  --color-brand: #74b382;
+  --color-brand-soft: #63a172;
+  --color-accent: #74b382;
+  --color-divider: #2b3121;
+  --color-hover: rgba(116, 179, 130, 0.09);
+  --color-selected: rgba(116, 179, 130, 0.17);
+  --color-ring: rgba(116, 179, 130, 0.42);
+  --gradient-panel: linear-gradient(135deg, rgba(116, 179, 130, 0.24) 0%, rgba(150, 138, 92, 0.18) 55%, #171b11 100%);
+  --shadow-elevated: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -8px rgba(4, 10, 4, 0.65);
+  --shadow-sheet: 0 -2px 32px rgba(3, 8, 3, 0.55), 0 -1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-fab: 0 8px 22px -4px rgba(116, 179, 130, 0.4);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-paper text-ink font-body antialiased;
+  font-feature-settings: 'tnum' 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth cross-fade whenever the theme family or light/dark mode changes.
+   Wrapped in :where() so this carries zero specificity — any component's
+   own transition-duration utility (e.g. a 150ms hover) still wins outright;
+   this only fills in a transition for elements that don't already have one,
+   so backgrounds/borders/text/shadows glide instead of snapping. Suspended
+   until .theme-ready (added after first paint, see index.html) so nothing
+   animates in from a flash of unstyled color on initial load. */
+:where(html.theme-ready *) {
+  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease, box-shadow 240ms ease, fill 240ms ease, stroke 240ms ease;
+}
+
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The little grabber bar at the top of an iOS-style bottom sheet */
+.sheet-grabber {
+  width: 36px;
+  height: 5px;
+  border-radius: 9999px;
+  margin: 8px auto 4px;
+}
+
+.glow-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+  pointer-events: none;
+}
+
+.panel-gradient {
+  background-image: var(--gradient-panel);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-divider rounded-full;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes confetti-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-confetti-pop {
+  animation: confetti-pop 320ms ease-out;
+}
