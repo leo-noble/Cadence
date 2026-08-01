@@ -29,7 +29,12 @@ function RequireAuth({ children }) {
   const { session, loading } = useAuth()
   if (loading) return null
   if (!session) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    // The return path travels as a search param, not router state. `Navigate`
+    // lists `state` in its effect deps, so a freshly-built `{ from }` object
+    // re-fires the redirect on every render — and because AnimatePresence
+    // keeps this subtree mounted through its exit animation, that becomes an
+    // infinite navigate → render → navigate loop. A string `to` is stable.
+    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
   }
   return children
 }

@@ -118,7 +118,7 @@ export default function AppShell() {
   const openChapter = openChapterId ? cadence.chapters.find((c) => c.id === openChapterId) : null
 
   return (
-    <div className="flex min-h-screen bg-paper">
+    <div className="flex bg-paper min-h-screen">
       <Nav active={tab} onChange={setTab} profile={profile} onSignOut={handleSignOut} collapsed={sidebarCollapsed} onToggleCollapsed={toggleSidebar} />
 
       <main className="flex-1 min-w-0">
@@ -144,7 +144,7 @@ export default function AppShell() {
         </AnimatePresence>
       </main>
 
-      {/* Floating quick-capture button */}
+      {/* Floating quick-capture button. */}
       {tab !== 'settings' && tab !== 'focus' && (
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -180,6 +180,7 @@ export default function AppShell() {
             onSnooze={cadence.snoozeChapterAction}
             onStruggle={cadence.struggleChapterAction}
             onMasterEarly={cadence.masterEarlyAction}
+            onRename={cadence.renameChapter}
             onDelete={cadence.removeChapter}
           />
         )}

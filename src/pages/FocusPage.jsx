@@ -42,6 +42,9 @@ function playChime() {
   }
 }
 
+const stepBtn =
+  'h-7 w-7 flex items-center justify-center rounded-full bg-paper text-ink-soft hover:text-ink disabled:opacity-30 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50'
+
 function Stepper({ label, value, onChange, disabled }) {
   return (
     <div className="flex items-center justify-between py-2.5">
@@ -51,16 +54,21 @@ function Stepper({ label, value, onChange, disabled }) {
           type="button"
           disabled={disabled || value <= 1}
           onClick={() => onChange(Math.max(1, value - 1))}
-          className="h-7 w-7 flex items-center justify-center rounded-full bg-paper text-ink-soft hover:text-ink disabled:opacity-30 transition-colors duration-150"
+          aria-label={`Decrease ${label.toLowerCase()}`}
+          className={stepBtn}
         >
           <Minus size={13} />
         </button>
-        <span className="w-9 text-center font-tabular text-[14px] text-ink">{value}m</span>
+        {/* Announced on change so the new duration is heard, not just seen. */}
+        <span aria-live="polite" className="w-9 text-center font-tabular text-[14px] text-ink">
+          {value}m
+        </span>
         <button
           type="button"
           disabled={disabled || value >= 120}
           onClick={() => onChange(Math.min(120, value + 1))}
-          className="h-7 w-7 flex items-center justify-center rounded-full bg-paper text-ink-soft hover:text-ink disabled:opacity-30 transition-colors duration-150"
+          aria-label={`Increase ${label.toLowerCase()}`}
+          className={stepBtn}
         >
           <Plus size={13} />
         </button>
@@ -69,23 +77,33 @@ function Stepper({ label, value, onChange, disabled }) {
   )
 }
 
+// The whole row is the control, not just the 42px track: the label is the
+// button's own accessible name (it used to be an unassociated sibling
+// <span>, which left the switch nameless to screen readers and gave it a
+// tap target barely wider than a fingertip), and role/aria-checked make it
+// announce as a switch that's on or off.
 function Toggle({ label, checked, onChange, disabled }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-2.5">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className="w-full flex items-center justify-between gap-3 py-2.5 text-left rounded-control disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
+    >
       <span className="text-[13.5px] text-ink-soft">{label}</span>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className={`relative w-[42px] h-[25px] shrink-0 rounded-full transition-colors duration-200 disabled:opacity-40 ${checked ? 'bg-brand' : 'bg-divider'}`}
+      <span
+        aria-hidden="true"
+        className={`relative w-[42px] h-[25px] shrink-0 rounded-full transition-colors duration-200 ${checked ? 'bg-brand' : 'bg-divider'}`}
       >
         <span
           className={`absolute top-0.5 h-[21px] w-[21px] rounded-full bg-white shadow transition-transform duration-200 ${
             checked ? 'translate-x-[19px]' : 'translate-x-0.5'
           }`}
         />
-      </button>
-    </div>
+      </span>
+    </button>
   )
 }
 

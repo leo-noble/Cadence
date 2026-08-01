@@ -12,6 +12,7 @@ import {
   toISODate,
   MAX_REVIEW_INDEX,
 } from './srs'
+import { MIN_BLOCK_MINUTES, DEFAULT_BLOCK_MINUTES } from './timeGrid'
 
 export function useCadence(userId) {
   const [subjects, setSubjects] = useState(() => store.getSubjects())
@@ -20,6 +21,7 @@ export function useCadence(userId) {
     return store.getChapters()
   })
   const [events, setEvents] = useState(() => store.getEvents())
+  const [blocks, setBlocks] = useState(() => store.getStudyBlocks())
   const [prefs, setPrefs] = useState(() => store.getPrefs())
   const [streak, setStreak] = useState(() => store.getStreakData())
   const [justMastered, setJustMastered] = useState(null) // chapter id, for celebration
@@ -27,6 +29,7 @@ export function useCadence(userId) {
   useEffect(() => { store.saveSubjects(subjects) }, [subjects])
   useEffect(() => { store.saveChapters(chapters) }, [chapters])
   useEffect(() => { store.saveEvents(events) }, [events])
+  useEffect(() => { store.saveStudyBlocks(blocks) }, [blocks])
   useEffect(() => { store.savePrefs(prefs) }, [prefs])
   useEffect(() => { store.saveStreakData(streak) }, [streak])
 
@@ -46,6 +49,15 @@ export function useCadence(userId) {
       if (Array.isArray(remote.subjects)) { store.saveSubjects(remote.subjects); setSubjects(remote.subjects) }
       if (Array.isArray(remote.chapters)) { store.saveChapters(remote.chapters); setChapters(remote.chapters) }
       if (Array.isArray(remote.events)) { store.saveEvents(remote.events); setEvents(remote.events) }
+      // The cloud blob may still hold old-shape range plans if it was last
+      // written by a device that hasn't updated, so normalize on the way in
+      // rather than trusting the shape.
+      const remoteBlocks = remote.blocks ?? remote.plans
+      if (Array.isArray(remoteBlocks)) {
+        const normalized = store.normalizeBlocks(remoteBlocks)
+        store.saveStudyBlocks(normalized)
+        setBlocks(normalized)
+      }
       if (remote.streak) { store.saveStreakData(remote.streak); setStreak(remote.streak) }
     })
   }, [userId])
@@ -53,13 +65,14 @@ export function useCadence(userId) {
   useEffect(() => {
     if (!userId) return
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-    pushCloudDataDebounced(userId, { subjects, chapters, events, streak, prefs, timezone })
-  }, [userId, subjects, chapters, events, streak, prefs])
+    pushCloudDataDebounced(userId, { subjects, chapters, events, blocks, streak, prefs, timezone })
+  }, [userId, subjects, chapters, events, blocks, streak, prefs])
 
   const refreshAll = useCallback(() => {
     setSubjects(store.getSubjects())
     setChapters(store.getChapters())
     setEvents(store.getEvents())
+    setBlocks(store.getStudyBlocks())
     setPrefs(store.getPrefs())
     setStreak(store.getStreakData())
   }, [])
@@ -139,6 +152,18 @@ export function useCadence(userId) {
     setChapters(store.getChapters())
   }, [])
 
+  // Title only — the subject a chapter was filed under is deliberately not
+  // editable here. Blocks store chapter ids, not titles, so every block
+  // labelled by this chapter re-reads the new name on the next render.
+  const renameChapter = useCallback((id, title) => {
+    const trimmed = String(title || '').trim()
+    if (!trimmed) return
+    const chapter = store.getChapter(id)
+    if (!chapter || chapter.title === trimmed) return
+    store.upsertChapter({ ...chapter, title: trimmed })
+    setChapters(store.getChapters())
+  }, [])
+
   const removeChapter = useCallback((id) => {
     store.deleteChapter(id)
     refreshAll()
@@ -196,6 +221,112 @@ export function useCadence(userId) {
 
   const clearJustMastered = useCallback(() => setJustMastered(null), [])
 
+  // ---- study block actions ----
+  // Takes the rows the plan sheet previewed — one per sitting, each already
+  // carrying the chapters assigned to that day. The sheet owns the split
+  // (and lets the user edit it), so this only persists what was shown.
+  // Rows created in one go share a seriesId, which is what makes
+  // "edit/delete the whole series" possible afterwards.
+  const createStudyBlocks = useCallback(({ rows, startMinute = null, endMinute = null }) => {
+    const usable = (rows || []).filter((r) => r?.date && r.chapterIds?.length > 0)
+    if (usable.length === 0) return []
+    const seriesId = usable.length > 1 ? store.uid() : null
+    const createdAt = new Date().toISOString()
+    const timed = Number.isFinite(startMinute) && Number.isFinite(endMinute)
+    const created = usable.map((row) => ({
+      id: store.uid(),
+      chapterIds: [...row.chapterIds],
+      date: row.date,
+      startMinute: timed ? startMinute : null,
+      endMinute: timed ? endMinute : null,
+      done: false,
+      seriesId,
+      // New blocks inherit their chapter's title and their subject's
+      // colour; both can be overridden per block from the edit sheet.
+      title: null,
+      color: null,
+      createdAt,
+    }))
+    setBlocks((prev) => [...prev, ...created])
+    return created
+  }, [])
+
+  // `scope: 'series'` applies the time-of-day, chapters, label and colour to
+  // every block sharing the seriesId, but never the date — the whole point
+  // of a series is that its blocks sit on different days.
+  const updateStudyBlock = useCallback(({ id, chapterIds, date, startMinute, endMinute, title, color, scope = 'single' }) => {
+    setBlocks((prev) => {
+      const target = prev.find((b) => b.id === id)
+      if (!target) return prev
+      const timed = Number.isFinite(startMinute) && Number.isFinite(endMinute)
+      const trimmed = typeof title === 'string' && title.trim() ? title.trim() : null
+      // An empty selection is ignored rather than applied — a block with no
+      // chapters has nothing to render, so it would silently disappear.
+      const nextIds = chapterIds?.length > 0 ? chapterIds : null
+      const inScope = (b) =>
+        b.id === id || (scope === 'series' && target.seriesId && b.seriesId === target.seriesId)
+      return prev.map((b) => {
+        if (!inScope(b)) return b
+        return {
+          ...b,
+          chapterIds: nextIds ? [...nextIds] : b.chapterIds,
+          date: b.id === id && date ? date : b.date,
+          startMinute: timed ? startMinute : null,
+          endMinute: timed ? endMinute : null,
+          // Both are cleared by passing an empty value, so "reset to the
+          // chapter's own title / subject colour" is reachable.
+          title: title === undefined ? b.title : trimmed,
+          color: color === undefined ? b.color : color || null,
+        }
+      })
+    })
+  }, [])
+
+  // Move keeps the duration and only re-anchors the start, so dragging a
+  // 90-minute block never silently changes its length. Passing
+  // startMinute: null drops it into the all-day strip.
+  const moveStudyBlock = useCallback((id, { date, startMinute }) => {
+    setBlocks((prev) =>
+      prev.map((b) => {
+        if (b.id !== id) return b
+        const nextDate = date || b.date
+        if (startMinute === null) return { ...b, date: nextDate, startMinute: null, endMinute: null }
+        if (!Number.isFinite(startMinute)) return { ...b, date: nextDate }
+        const duration =
+          Number.isFinite(b.startMinute) && Number.isFinite(b.endMinute)
+            ? b.endMinute - b.startMinute
+            : DEFAULT_BLOCK_MINUTES
+        return { ...b, date: nextDate, startMinute, endMinute: startMinute + duration }
+      })
+    )
+  }, [])
+
+  const resizeStudyBlock = useCallback((id, endMinute) => {
+    setBlocks((prev) =>
+      prev.map((b) => {
+        if (b.id !== id || !Number.isFinite(b.startMinute)) return b
+        return { ...b, endMinute: Math.max(b.startMinute + MIN_BLOCK_MINUTES, endMinute) }
+      })
+    )
+  }, [])
+
+  const removeStudyBlock = useCallback((id) => {
+    setBlocks((prev) => prev.filter((b) => b.id !== id))
+  }, [])
+
+  const removeStudySeries = useCallback((id) => {
+    setBlocks((prev) => {
+      const target = prev.find((b) => b.id === id)
+      if (!target) return prev
+      if (!target.seriesId) return prev.filter((b) => b.id !== id)
+      return prev.filter((b) => b.seriesId !== target.seriesId)
+    })
+  }, [])
+
+  const toggleStudyBlockDone = useCallback((id) => {
+    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, done: !b.done } : b)))
+  }, [])
+
   // ---- prefs ----
   const updatePrefs = useCallback((p) => setPrefs((prev) => ({ ...prev, ...p })), [])
 
@@ -203,6 +334,7 @@ export function useCadence(userId) {
     subjects,
     chapters: chaptersWithStatus,
     events,
+    blocks,
     prefs,
     streak,
     overdue,
@@ -216,11 +348,19 @@ export function useCadence(userId) {
     removeSubject,
     createChapter,
     updateChapter,
+    renameChapter,
     removeChapter,
     reviseChapter,
     snoozeChapterAction,
     struggleChapterAction,
     masterEarlyAction,
+    createStudyBlocks,
+    updateStudyBlock,
+    moveStudyBlock,
+    resizeStudyBlock,
+    removeStudyBlock,
+    removeStudySeries,
+    toggleStudyBlockDone,
     updatePrefs,
   }
 }

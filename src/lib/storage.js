@@ -3,7 +3,7 @@
 // Shape mirrors the data model in the blueprint (Subject / Chapter / ReviewEvent),
 // using camelCase JS keys internally.
 
-import { toISODate, nextReviewDateForIndex, MAX_REVIEW_INDEX } from './srs'
+import { toISODate, addDays, daysBetween, nextReviewDateForIndex, MAX_REVIEW_INDEX } from './srs'
 
 const KEYS = {
   subjects: 'cadence.subjects',
@@ -11,6 +11,7 @@ const KEYS = {
   events: 'cadence.events',
   prefs: 'cadence.prefs',
   streak: 'cadence.streak',
+  plans: 'cadence.studyPlans', // now stores blocks, not date-range plans
 }
 
 function read(key, fallback) {
@@ -62,7 +63,9 @@ export function addSubject({ name, colorTag }) {
 }
 export function deleteSubject(subjectId) {
   saveSubjects(getSubjects().filter((s) => s.id !== subjectId))
+  const removedIds = new Set(getChapters().filter((c) => c.subjectId === subjectId).map((c) => c.id))
   saveChapters(getChapters().filter((c) => c.subjectId !== subjectId))
+  saveStudyBlocks(pruneChapterRefs(getStudyBlocks(), (id) => removedIds.has(id)))
 }
 
 // ---------- Chapters ----------
@@ -90,6 +93,117 @@ export function upsertChapter(chapter) {
 export function deleteChapter(id) {
   saveChapters(getChapters().filter((c) => c.id !== id))
   saveEvents(getEvents().filter((e) => e.chapterId !== id))
+  saveStudyBlocks(pruneChapterRefs(getStudyBlocks(), (cid) => cid === id))
+}
+
+/**
+ * Cascade-delete for blocks: drop the dead chapter ids from every block, then
+ * remove only the blocks left holding none. Filtering whole blocks out instead
+ * would destroy a three-chapter sitting because one of its chapters was
+ * deleted — the other two are still something the user planned to do.
+ */
+function pruneChapterRefs(blocks, isRemoved) {
+  return blocks
+    .map((b) => ({ ...b, chapterIds: b.chapterIds.filter((cid) => !isRemoved(cid)) }))
+    .filter((b) => b.chapterIds.length > 0)
+}
+
+// ---------- Study blocks ----------
+// A block is one or more chapters booked on one specific day, optionally at a
+// specific time. Several chapters per block because one sitting is often spent
+// across two or three of them, and splitting that into separate blocks would
+// mean three overlapping rectangles for what the user thinks of as one session.
+// Timed blocks carry startMinute/endMinute as minutes from
+// local midnight — never a timestamp, so a block at 9am stays at 9am if
+// the device changes timezone. Untimed blocks leave both null and live in
+// the all-day strip.
+//
+// A session spread across several days is stored as one block per day,
+// sharing a seriesId. That keeps completion independent per sitting, and
+// it means dragging Wednesday's block to Friday moves only that day —
+// while still allowing "edit the whole series" as a deliberate choice.
+//
+// Distinct from review events: a block is something the user decided to
+// do; a review is something the schedule asked for.
+export function getStudyBlocks() {
+  return normalizeBlocks(read(KEYS.plans, []))
+}
+export function saveStudyBlocks(blocks) {
+  write(KEYS.plans, blocks)
+}
+
+// Every calendar date a legacy date-range plan covered, inclusive of both
+// ends. The clamp guards against a corrupt or hand-edited range producing
+// a runaway loop — nothing in the UI could create a span this long.
+function eachLegacyDate(plan) {
+  const dates = []
+  const span = Math.min(Math.max(daysBetween(plan.startDate, plan.endDate || plan.startDate), 0), 366)
+  for (let i = 0; i <= span; i++) dates.push(toISODate(addDays(plan.startDate, i)))
+  return dates
+}
+
+/**
+ * Coerces whatever is in storage into the block shape. Runs on every read
+ * rather than once behind a migration flag, so a stale record synced down
+ * from another device that hasn't updated yet still lands correctly — and
+ * so a half-finished migration can't leave the app reading two shapes.
+ *
+ * Two legacy shapes are accepted: a single-`chapterId` block (wrapped into a
+ * one-element `chapterIds`), and a date-range plan, which explodes into one
+ * untimed block per day it covered, preserving which days were ticked off.
+ */
+export function normalizeBlocks(raw) {
+  if (!Array.isArray(raw)) return []
+  const out = []
+  raw.forEach((entry) => {
+    if (!entry || typeof entry !== 'object') return
+    // Single-chapter blocks predate multi-chapter ones; either shape reads.
+    const chapterIds = (
+      Array.isArray(entry.chapterIds) ? entry.chapterIds : [entry.chapterId]
+    ).filter((id) => typeof id === 'string' && id)
+    if (chapterIds.length === 0) return
+
+    // Already a block.
+    if (typeof entry.date === 'string') {
+      const hasTime = Number.isFinite(entry.startMinute) && Number.isFinite(entry.endMinute)
+      out.push({
+        id: entry.id || uid(),
+        chapterIds,
+        date: entry.date,
+        startMinute: hasTime ? entry.startMinute : null,
+        endMinute: hasTime ? entry.endMinute : null,
+        done: !!entry.done,
+        seriesId: entry.seriesId || null,
+        // Optional per-block overrides. Null means "inherit from the
+        // chapter / its subject", which is what almost every block does.
+        title: typeof entry.title === 'string' && entry.title.trim() ? entry.title.trim() : null,
+        color: typeof entry.color === 'string' && entry.color ? entry.color : null,
+        createdAt: entry.createdAt || new Date().toISOString(),
+      })
+      return
+    }
+
+    // Legacy range plan → one untimed block per covered day.
+    if (typeof entry.startDate !== 'string') return
+    const completed = new Set(Array.isArray(entry.completedDates) ? entry.completedDates : [])
+    const dates = eachLegacyDate(entry)
+    const seriesId = dates.length > 1 ? entry.id || uid() : null
+    dates.forEach((iso, i) => {
+      out.push({
+        id: i === 0 ? entry.id || uid() : `${entry.id || uid()}-${i}`,
+        chapterIds,
+        date: iso,
+        startMinute: null,
+        endMinute: null,
+        done: completed.has(iso),
+        seriesId,
+        title: null,
+        color: null,
+        createdAt: entry.createdAt || new Date().toISOString(),
+      })
+    })
+  })
+  return out
 }
 
 // ---------- Review Events ----------
@@ -185,25 +299,52 @@ export function clearTimerState() {
 }
 
 // ---------- Backup / restore ----------
-// Builds a standard .ics calendar (one all-day VEVENT per active chapter's
-// next review date) so review dates can be imported into Google/Apple/
-// Outlook calendars. Mastered chapters have no nextReviewDate and are
-// skipped.
+// Builds a standard .ics calendar so both halves of the schedule can be
+// imported into Google/Apple/Outlook: one all-day VEVENT per active
+// chapter's next review date, plus one per planned study block. Mastered
+// chapters have no nextReviewDate and are skipped.
 export function exportChaptersToICS() {
   const pad = (n) => String(n).padStart(2, '0')
   const stamp = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`
   const dateOnly = (iso) => iso.replace(/-/g, '')
+  // Floating local time (no Z, no TZID): a 9am block imports as 9am in
+  // whatever timezone the importing calendar is set to, which is what a
+  // study block stored as minutes-from-midnight actually means.
+  const localStamp = (iso, minute) =>
+    `${dateOnly(iso)}T${pad(Math.floor(minute / 60))}${pad(minute % 60)}00`
   const subjects = new Map(getSubjects().map((s) => [s.id, s]))
-  const chapters = getChapters().filter((c) => c.nextReviewDate)
+  const allChapters = getChapters()
+  const chapters = allChapters.filter((c) => c.nextReviewDate)
+  const now = stamp(new Date())
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Cadence//Study Reminders//EN', 'CALSCALE:GREGORIAN']
   chapters.forEach((c) => {
     const subjectName = subjects.get(c.subjectId)?.name || 'Cadence'
     lines.push(
       'BEGIN:VEVENT',
       `UID:${c.id}@cadence.app`,
-      `DTSTAMP:${stamp(new Date())}`,
+      `DTSTAMP:${now}`,
       `DTSTART;VALUE=DATE:${dateOnly(c.nextReviewDate)}`,
       `SUMMARY:Review — ${subjectName}: ${c.title}`,
+      'END:VEVENT'
+    )
+  })
+  const chapterMap = new Map(allChapters.map((c) => [c.id, c]))
+  getStudyBlocks().forEach((block) => {
+    const blockChapters = block.chapterIds.map((id) => chapterMap.get(id)).filter(Boolean)
+    if (blockChapters.length === 0) return
+    const subjectName = subjects.get(blockChapters[0].subjectId)?.name || 'Cadence'
+    const timed = Number.isFinite(block.startMinute) && Number.isFinite(block.endMinute)
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:${block.id}@cadence.app`,
+      `DTSTAMP:${now}`,
+      ...(timed
+        ? [
+            `DTSTART:${localStamp(block.date, block.startMinute)}`,
+            `DTEND:${localStamp(block.date, block.endMinute)}`,
+          ]
+        : [`DTSTART;VALUE=DATE:${dateOnly(block.date)}`]),
+      `SUMMARY:Study — ${subjectName}: ${block.title || blockChapters.map((c) => c.title).join(', ')}`,
       'END:VEVENT'
     )
   })
@@ -220,6 +361,7 @@ export function exportAllData() {
       subjects: getSubjects(),
       chapters: getChapters(),
       events: getEvents(),
+      blocks: getStudyBlocks(),
       prefs: getPrefs(),
       streak: getStreakData(),
     },
@@ -233,7 +375,7 @@ export function importAllData(jsonString) {
   try {
     data = JSON.parse(jsonString)
   } catch {
-    return { ok: false, error: 'That file isn\u2019t valid JSON.' }
+    return { ok: false, error: 'That file isn’t valid JSON.' }
   }
   if (!data || typeof data !== 'object') {
     return { ok: false, error: 'Unrecognized backup file.' }
@@ -241,6 +383,9 @@ export function importAllData(jsonString) {
   if (Array.isArray(data.subjects)) saveSubjects(data.subjects)
   if (Array.isArray(data.chapters)) saveChapters(data.chapters)
   if (Array.isArray(data.events)) saveEvents(data.events)
+  // Accept both old 'plans' and new 'blocks' keys; normalizeBlocks coerces either.
+  if (Array.isArray(data.blocks)) saveStudyBlocks(data.blocks)
+  else if (Array.isArray(data.plans)) saveStudyBlocks(data.plans)
   if (data.prefs && typeof data.prefs === 'object') savePrefs(data.prefs)
   if (data.streak && typeof data.streak === 'object') saveStreakData(data.streak)
   return { ok: true }
@@ -253,6 +398,7 @@ export function deleteAllData() {
   localStorage.removeItem(KEYS.subjects)
   localStorage.removeItem(KEYS.chapters)
   localStorage.removeItem(KEYS.events)
+  localStorage.removeItem(KEYS.plans)
   localStorage.removeItem(KEYS.prefs)
   localStorage.removeItem(KEYS.streak)
 }

@@ -198,6 +198,37 @@ body {
   background: transparent;
 }
 
+/* ---------- Landing page atmosphere ----------
+   The marketing page separates its sections with light and space rather than
+   rules, so it needs a couple of primitives Tailwind can't express: a very
+   slow drift on the background glows (so a static page still breathes), and
+   a dot field that fades out towards its own edges instead of stopping at a
+   hard line. */
+@keyframes orb-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(2%, -3%, 0) scale(1.06); }
+}
+.orb-drift {
+  animation: orb-drift 18s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb-drift { animation: none; }
+}
+
+.dot-field {
+  background-image: radial-gradient(currentColor 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000, transparent 72%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000, transparent 72%);
+}
+
+/* A hairline that dissolves at both ends — used where a section genuinely
+   needs a horizon line (the footer) without the boxed-in look of a border. */
+.fade-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-divider) 18%, var(--color-divider) 82%, transparent);
+}
+
 @keyframes confetti-pop {
   0% { transform: scale(0.6); opacity: 0; }
   60% { transform: scale(1.08); opacity: 1; }

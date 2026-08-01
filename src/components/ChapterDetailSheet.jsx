@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Check, Clock, AlertCircle, Trash2, Lock } from 'lucide-react'
+import { X, Check, Clock, AlertCircle, Trash2, Lock, Pencil } from 'lucide-react'
 import StatusChip from './StatusChip'
 import Grabber from './Grabber'
 import { buildTimeline, isDueOrOverdue, daysBetween } from '../lib/srs'
@@ -29,8 +30,31 @@ export default function ChapterDetailSheet({
   onSnooze,
   onStruggle,
   onMasterEarly,
+  onRename,
   onDelete,
 }) {
+  // The title is editable; the subject is not — a chapter filed under Biology
+  // stays under Biology, so renaming can't quietly move it.
+  const [renaming, setRenaming] = useState(false)
+  const [draft, setDraft] = useState(chapter?.title || '')
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (renaming) inputRef.current?.select()
+  }, [renaming])
+
+  function startRename() {
+    setDraft(chapter?.title || '')
+    setRenaming(true)
+  }
+
+  function commitRename() {
+    setRenaming(false)
+    const trimmed = draft.trim()
+    // An empty box means "I changed my mind", not "call it nothing".
+    if (trimmed && trimmed !== chapter.title) onRename?.(chapter.id, trimmed)
+  }
+
   if (!chapter) return null
   const timeline = buildTimeline(chapter)
   const isMastered = chapter.status === 'mastered'
@@ -73,9 +97,42 @@ export default function ChapterDetailSheet({
               {subject && <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: subject.colorTag }} />}
               <span className="text-[13px] text-ink-soft">{subject?.name}</span>
             </div>
-            <h2 className="font-display text-[22px] font-bold text-ink leading-snug tracking-tight">
-              {chapter.title}
-            </h2>
+            {renaming ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={draft}
+                maxLength={120}
+                aria-label="Chapter title"
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    commitRename()
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault()
+                    setRenaming(false)
+                  }
+                }}
+                className="w-full -mx-2 px-2 py-0.5 rounded-control bg-paper border border-brand/40 font-display text-[22px] font-bold text-ink leading-snug tracking-tight focus:outline-none focus:ring-2 focus:ring-brand/40"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={startRename}
+                title="Rename this chapter"
+                className="group -mx-2 px-2 py-0.5 rounded-control flex items-start gap-2 text-left hover:bg-hover transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+              >
+                <h2 className="font-display text-[22px] font-bold text-ink leading-snug tracking-tight">
+                  {chapter.title}
+                </h2>
+                <Pencil
+                  size={13}
+                  className="mt-2 shrink-0 text-ink-soft opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2 mt-2 mb-5">
