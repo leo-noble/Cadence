@@ -39,7 +39,7 @@ export default function LandingNav() {
           : 'bg-transparent border-b border-transparent'
       }`}
     >
-      <div className="max-w-6xl mx-auto flex items-center justify-between px-6 md:px-8 h-16">
+      <div className="max-w-[76rem] mx-auto flex items-center justify-between px-6 md:px-8 h-16">
         <a href="#top" className={`rounded-control ${focusRing}`} aria-label="Cadence — back to top">
           <Logo size={26} />
         </a>

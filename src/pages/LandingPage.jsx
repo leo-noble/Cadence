@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, MotionConfig } from 'framer-motion'
-import { ArrowRight, Download, Sparkles } from 'lucide-react'
+import { ArrowRight, ChevronDown, Download, Sparkles } from 'lucide-react'
 import Logo from '../components/Logo'
 import HeroPreview from '../components/HeroPreview'
 import RhythmTimeline from '../components/RhythmTimeline'
@@ -11,9 +11,9 @@ import HowItWorks, { StepsCta } from '../components/landing/HowItWorks'
 import AppTour from '../components/landing/AppTour'
 import WhySection from '../components/landing/WhySection'
 import Faq from '../components/landing/Faq'
-import { Glow, Section, SectionHead } from '../components/landing/Section'
+import { Glow, Section, SectionHead, CONTAINER } from '../components/landing/Section'
 import { Reveal, Stagger } from '../components/landing/Reveal'
-import { fadeUp, group, transition } from '../components/landing/anim'
+import { EASE, fadeUp, group, transition } from '../components/landing/anim'
 import { NAV_LINKS, focusRing } from '../components/landing/links'
 
 const primaryCta =
@@ -57,7 +57,12 @@ export default function LandingPage() {
         <LandingNav />
 
         {/* ================= Hero ================= */}
-        <section id="top" className="relative scroll-mt-24">
+        {/* The hero owns the whole first screen: min-height minus the 4rem nav, with
+            the grid centred inside it so the next band never peeks above the fold. */}
+        <section
+          id="top"
+          className="relative scroll-mt-24 flex items-center min-h-[calc(100svh-4rem)]"
+        >
           <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
             <Glow className="-top-48 -left-40" size={520} color="bg-brand/20" />
             <Glow className="top-0 right-[-180px]" size={440} color="bg-accent/15" />
@@ -67,7 +72,9 @@ export default function LandingPage() {
             />
           </div>
 
-          <div className="max-w-6xl mx-auto px-6 md:px-8 pt-12 md:pt-20 pb-24 md:pb-36 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-16 lg:gap-12 items-center">
+          <div
+            className={`w-full ${CONTAINER} pt-14 md:pt-16 pb-24 md:pb-28 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-16 lg:gap-14 items-center`}
+          >
             <motion.div initial="hidden" animate="visible" variants={group(0.09)}>
               <motion.div variants={fadeUp} transition={transition(0.5)}>
                 <span className="inline-flex items-center gap-2 rounded-capsule bg-brand/10 text-brand text-[12.5px] font-medium pl-2.5 pr-3.5 py-1.5 mb-7">
@@ -120,10 +127,30 @@ export default function LandingPage() {
               <HeroPreview />
             </div>
           </div>
+
+          {/* Sits in the space the taller hero opens up, so the empty base of the
+              screen reads as an invitation to scroll rather than as dead room. */}
+          <motion.a
+            href="#how"
+            aria-label="Scroll to how it works"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.7, duration: 0.6, ease: EASE }}
+            className={`absolute bottom-7 left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center text-ink-soft transition-colors duration-180 hover:text-ink rounded-control ${focusRing}`}
+          >
+            <motion.span
+              aria-hidden="true"
+              animate={{ y: [0, 5, 0] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex"
+            >
+              <ChevronDown size={16} />
+            </motion.span>
+          </motion.a>
         </section>
 
         {/* ================= How it works ================= */}
-        <Section id="how" tone="raised" size="xl">
+        <Section id="how" tone="raised" size="xl" top="lg">
           <SectionHead
             eyebrow="How it works"
             title="Ten seconds of typing a day. Cadence keeps the schedule."
@@ -220,7 +247,7 @@ export default function LandingPage() {
               color="bg-brand/18"
             />
           </div>
-          <div className="max-w-6xl mx-auto px-6 md:px-8 py-28 md:py-40 text-center">
+          <div className={`${CONTAINER} py-28 md:py-40 text-center`}>
             <Stagger stagger={0.09}>
               <Stagger.Item>
                 <h2 className="font-display text-[36px] md:text-[52px] font-semibold leading-[1.06] tracking-tightest max-w-2xl mx-auto text-balance">
@@ -257,7 +284,7 @@ export default function LandingPage() {
 
         {/* ================= Footer ================= */}
         <footer>
-          <div className="max-w-6xl mx-auto px-6 md:px-8">
+          <div className={CONTAINER}>
             <div className="fade-rule" />
             <div className="py-14 flex flex-col sm:flex-row sm:items-start justify-between gap-10">
               <div>

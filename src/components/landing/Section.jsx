@@ -2,13 +2,25 @@ import { Reveal } from './Reveal'
 
 // Section rhythm lives here so no individual section invents its own padding.
 // Sections are separated by space and by a change of surface — never by a rule.
-export function Section({ id, children, className = '', tone = 'paper', size = 'lg' }) {
-  const pad = {
-    sm: 'py-16 md:py-20',
-    lg: 'py-24 md:py-32',
-    xl: 'py-28 md:py-40',
-  }[size]
+const PAD_TOP = {
+  sm: 'pt-16 md:pt-20',
+  lg: 'pt-24 md:pt-32',
+  xl: 'pt-28 md:pt-40',
+}
 
+const PAD_BOTTOM = {
+  sm: 'pb-16 md:pb-20',
+  lg: 'pb-24 md:pb-32',
+  xl: 'pb-28 md:pb-40',
+}
+
+// One container width for the whole page — nav, every section, the closing CTA
+// and the footer all read off this, so nothing can drift out of alignment.
+export const CONTAINER = 'max-w-[76rem] mx-auto px-6 md:px-8'
+
+// `top` lets the band under the hero use a different top padding from its own
+// bottom padding, since it meets the hero's padding rather than open space.
+export function Section({ id, children, className = '', tone = 'paper', size = 'lg', top = size }) {
   const surface = {
     paper: '',
     // A single step up in lightness reads as a distinct band without a border.
@@ -17,7 +29,15 @@ export function Section({ id, children, className = '', tone = 'paper', size = '
 
   return (
     <section id={id} className={`relative scroll-mt-24 ${surface} ${className}`}>
-      <div className={`max-w-6xl mx-auto px-6 md:px-8 ${pad}`}>{children}</div>
+      {tone === 'raised' && (
+        // The tint arrives gradually instead of snapping on at a hard edge, so
+        // the band starts without reading as a horizontal rule.
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-paper to-transparent"
+        />
+      )}
+      <div className={`relative ${CONTAINER} ${PAD_TOP[top]} ${PAD_BOTTOM[size]}`}>{children}</div>
     </section>
   )
 }
